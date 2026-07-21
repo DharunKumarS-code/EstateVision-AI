@@ -27,28 +27,6 @@ This project demonstrates the integration of **Machine Learning**, **REST APIs**
 - 📱 Mobile-friendly design
 - 🌙 Premium dark theme
 
----
-
-# 🖼️ Screenshots
-
-## Home Page
-
-![Home](screenshots/home.png)
-
----
-
-## Prediction Form
-
-![Prediction Form](screenshots/prediction-form.png)
-
----
-
-## Prediction Result
-
-![Prediction Result](screenshots/result.png)
-
----
-
 # 🏗️ Tech Stack
 
 ### Frontend
