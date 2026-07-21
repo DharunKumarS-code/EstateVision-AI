@@ -237,7 +237,7 @@ React UI
 **S. Dharun Kumar**
 
 - GitHub: https://github.com/DharunKumarS-code
-- LinkedIn: https://www.linkedin.com/in/YOUR_LINKEDIN_USERNAME
+- LinkedIn: www.linkedin.com/in/dharun-kumar-8504a4290
 
 ---
 
