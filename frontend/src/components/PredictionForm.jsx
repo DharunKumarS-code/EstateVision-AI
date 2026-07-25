@@ -1,111 +1,279 @@
-import { useState, useEffect } from 'react'
-import { getLocations, predictPrice } from '../services/api'
-import ResultCard from './ResultCard'
+import { useEffect, useState } from "react";
+import {
+  MapPin,
+  Home,
+  BedDouble,
+  Bath,
+  Ruler,
+  Sparkles,
+} from "lucide-react";
+import api from "../services/api";
 
 export default function PredictionForm() {
-  const [locations, setLocations] = useState([])
-  const [form, setForm] = useState({ location: '', sqft: '', bhk: 1, bath: 1, balcony: 0 })
-  const [result, setResult] = useState(null)
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [locations, setLocations] = useState([]);
+
+  const [formData, setFormData] = useState({
+    total_sqft: "",
+    location: "",
+    bhk: "",
+    bath: "",
+    balcony: "",
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [prediction, setPrediction] = useState(null);
 
   useEffect(() => {
-    getLocations()
-      .then(res => setLocations(res.data.locations))
-      .catch(() => setError('Failed to load locations'))
-  }, [])
+    const loadLocations = async () => {
+      try {
+        const res = await api.get("/get_location_names");
+        setLocations(res.data.locations || []);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+
+    loadLocations();
+  }, []);
 
   const handleChange = (e) => {
-    const { name, value } = e.target
-    setForm(prev => ({ ...prev, [name]: value }))
-  }
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError('')
-    setResult(null)
-    setLoading(true)
+  const predictPrice = async (e) => {
+    e.preventDefault();
+
+    setLoading(true);
+    setPrediction(null);
+
     try {
-      const res = await predictPrice({
-        location: form.location,
-        sqft: parseFloat(form.sqft),
-        bhk: parseInt(form.bhk),
-        bath: parseInt(form.bath),
-        balcony: parseInt(form.balcony)
-      })
-      setResult(res.data.estimated_price)
-    } catch {
-      setError('Prediction failed. Please check your inputs.')
-    } finally {
-      setLoading(false)
+      const res = await api.post("/predict_home_price", {
+        location: formData.location,
+        sqft: parseFloat(formData.total_sqft),
+        bath: parseInt(formData.bath),
+        balcony: parseInt(formData.balcony),
+        bhk: parseInt(formData.bhk),
+      });
+
+      setPrediction(res.data.estimated_price);
+    } catch (err) {
+      console.error(err.response?.data);
+      alert(err.response?.data?.error || "Prediction failed.");
     }
-  }
+
+    setLoading(false);
+  };
 
   return (
-    <div style={styles.wrapper}>
-      <form onSubmit={handleSubmit} style={styles.form}>
-        <h2 style={styles.title}>Predict House Price</h2>
+    <section
+      id="predict"
+      className="bg-[#020817] py-24 px-6"
+    >
+      <div className="max-w-6xl mx-auto">
 
-        <label style={styles.label}>Location</label>
-        <select name="location" value={form.location} onChange={handleChange} required style={styles.input}>
-          <option value="">Select location</option>
-          {locations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
-        </select>
+        <div className="text-center">
 
-        <label style={styles.label}>Total Sqft</label>
-        <input type="number" name="sqft" value={form.sqft} onChange={handleChange}
-          placeholder="e.g. 1200" min="100" required style={styles.input} />
+          <span className="inline-flex items-center gap-2 rounded-full border border-cyan-500/20 bg-cyan-500/10 px-5 py-2 text-cyan-400">
 
-        <div style={styles.row}>
-          <div style={styles.col}>
-            <label style={styles.label}>BHK</label>
-            <select name="bhk" value={form.bhk} onChange={handleChange} style={styles.input}>
-              {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </div>
-          <div style={styles.col}>
-            <label style={styles.label}>Bathrooms</label>
-            <select name="bath" value={form.bath} onChange={handleChange} style={styles.input}>
-              {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </div>
-          <div style={styles.col}>
-            <label style={styles.label}>Balconies</label>
-            <select name="balcony" value={form.balcony} onChange={handleChange} style={styles.input}>
-              {[0,1,2,3].map(n => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </div>
+            <Sparkles size={18} />
+
+            Predict Property Value
+
+          </span>
+
+          <h2 className="mt-6 text-5xl font-black text-white">
+
+            House Price Predictor
+
+          </h2>
+
+          <p className="mt-5 text-slate-400 text-lg">
+
+            Enter your property details and let AI estimate the price.
+
+          </p>
+
         </div>
 
-        {error && <p style={styles.error}>{error}</p>}
+        <div className="mt-16 rounded-3xl border border-slate-800 bg-slate-900/60 p-10 backdrop-blur-xl">
 
-        <button type="submit" disabled={loading} style={styles.btn}>
-          {loading ? 'Predicting...' : 'Predict Price'}
-        </button>
-      </form>
+          <form
+            onSubmit={predictPrice}
+            className="grid gap-8 md:grid-cols-2"
+          >
 
-      {result !== null && <ResultCard price={result} />}
-    </div>
-  )
-}
+            {/* Location */}
 
-const styles = {
-  wrapper: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '2rem' },
-  form: {
-    background: '#fff', borderRadius: '12px', padding: '2rem',
-    width: '100%', maxWidth: '520px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
-  },
-  title: { marginBottom: '1.5rem', color: '#1a1a2e', textAlign: 'center' },
-  label: { display: 'block', marginBottom: '4px', fontWeight: 600, color: '#333', fontSize: '0.9rem' },
-  input: {
-    width: '100%', padding: '0.6rem 0.8rem', marginBottom: '1rem',
-    border: '1px solid #ddd', borderRadius: '8px', fontSize: '0.95rem', boxSizing: 'border-box'
-  },
-  row: { display: 'flex', gap: '1rem' },
-  col: { flex: 1 },
-  btn: {
-    width: '100%', padding: '0.75rem', background: '#1a1a2e', color: '#fff',
-    border: 'none', borderRadius: '8px', fontSize: '1rem', cursor: 'pointer', marginTop: '0.5rem'
-  },
-  error: { color: '#e53e3e', fontSize: '0.9rem', marginBottom: '0.5rem' }
+            <div>
+
+              <label className="mb-3 flex items-center gap-2 text-white">
+
+                <MapPin size={18} />
+
+                Location
+
+              </label>
+
+              <select
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                className="w-full rounded-xl bg-slate-800 border border-slate-700 px-5 py-4 text-white outline-none focus:border-cyan-500"
+                required
+              >
+
+                <option value="">Select Location</option>
+
+                {locations.map((location) => (
+                  <option
+                    key={location}
+                    value={location}
+                  >
+                    {location}
+                  </option>
+                ))}
+
+              </select>
+
+            </div>
+
+            {/* Area */}
+
+            <div>
+
+              <label className="mb-3 flex items-center gap-2 text-white">
+
+                <Ruler size={18} />
+
+                Total Area (sq.ft)
+
+              </label>
+
+              <input
+                type="number"
+                name="total_sqft"
+                value={formData.total_sqft}
+                onChange={handleChange}
+                className="w-full rounded-xl bg-slate-800 border border-slate-700 px-5 py-4 text-white outline-none focus:border-cyan-500"
+                required
+              />
+
+            </div>
+
+            {/* Bedrooms */}
+
+            <div>
+
+              <label className="mb-3 flex items-center gap-2 text-white">
+
+                <BedDouble size={18} />
+
+                Bedrooms (BHK)
+
+              </label>
+
+              <input
+                type="number"
+                name="bhk"
+                value={formData.bhk}
+                onChange={handleChange}
+                className="w-full rounded-xl bg-slate-800 border border-slate-700 px-5 py-4 text-white outline-none focus:border-cyan-500"
+                required
+              />
+
+            </div>
+
+            {/* Bathrooms */}
+
+            <div>
+
+              <label className="mb-3 flex items-center gap-2 text-white">
+
+                <Bath size={18} />
+
+                Bathrooms
+
+              </label>
+
+              <input
+                type="number"
+                name="bath"
+                value={formData.bath}
+                onChange={handleChange}
+                className="w-full rounded-xl bg-slate-800 border border-slate-700 px-5 py-4 text-white outline-none focus:border-cyan-500"
+                required
+              />
+
+            </div>
+
+            {/* Balcony */}
+
+            <div className="md:col-span-2">
+
+              <label className="mb-3 flex items-center gap-2 text-white">
+
+                Balcony
+
+              </label>
+
+              <input
+                type="number"
+                name="balcony"
+                value={formData.balcony}
+                onChange={handleChange}
+                className="w-full rounded-xl bg-slate-800 border border-slate-700 px-5 py-4 text-white outline-none focus:border-cyan-500"
+                required
+              />
+
+            </div>
+
+            <div className="md:col-span-2">
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded-xl bg-cyan-500 py-4 text-lg font-bold text-white transition hover:bg-cyan-400 disabled:opacity-60"
+              >
+
+                {loading ? "Predicting..." : "Predict House Price"}
+
+              </button>
+
+            </div>
+
+          </form>
+
+          {prediction !== null && (
+
+            <div className="mt-10 rounded-2xl border border-cyan-500/20 bg-cyan-500/10 p-8 text-center">
+
+              <Home
+                size={50}
+                className="mx-auto text-cyan-400"
+              />
+
+              <h3 className="mt-5 text-2xl font-bold text-white">
+
+                Estimated Price
+
+              </h3>
+
+              <p className="mt-4 text-5xl font-black text-cyan-400">
+
+                ₹ {prediction} Lakhs
+
+              </p>
+
+            </div>
+
+          )}
+
+        </div>
+
+      </div>
+    </section>
+  );
 }

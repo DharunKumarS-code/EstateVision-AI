@@ -18,14 +18,21 @@ def create_app():
 
     app = Flask(__name__)
 
-    # Enable Cross-Origin Resource Sharing
+    # Enable CORS for React frontend
     CORS(app)
+
+    # Load ML model before serving requests
+    load_saved_artifacts()
 
     # Register API routes
     app.register_blueprint(routes)
 
-    # Load ML model and feature columns
-    load_saved_artifacts()
+    @app.route("/")
+    def home():
+        return {
+            "message": "Welcome to EstateVision AI API",
+            "status": "Running"
+        }
 
     return app
 

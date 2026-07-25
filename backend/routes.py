@@ -21,11 +21,9 @@ def get_locations():
     Return all available locations.
     """
 
-    response = {
+    return jsonify({
         "locations": get_location_names()
-    }
-
-    return jsonify(response)
+    })
 
 
 @routes.route("/predict_home_price", methods=["POST"])
@@ -38,18 +36,31 @@ def predict_home_price():
 
         data = request.get_json()
 
-        location = data["location"]
-        sqft = float(data["sqft"])
-        bath = int(data["bath"])
-        balcony = int(data["balcony"])
-        bhk = int(data["bhk"])
+        if data is None:
+            return jsonify({
+                "error": "No JSON data received."
+            }), 400
+
+        required_fields = [
+            "location",
+            "sqft",
+            "bath",
+            "balcony",
+            "bhk"
+        ]
+
+        for field in required_fields:
+            if field not in data:
+                return jsonify({
+                    "error": f"Missing field: {field}"
+                }), 400
 
         estimated_price = predict_price(
-            location=location,
-            sqft=sqft,
-            bath=bath,
-            balcony=balcony,
-            bhk=bhk,
+            location=data["location"],
+            sqft=float(data["sqft"]),
+            bath=int(data["bath"]),
+            balcony=int(data["balcony"]),
+            bhk=int(data["bhk"])
         )
 
         return jsonify({
@@ -60,4 +71,4 @@ def predict_home_price():
 
         return jsonify({
             "error": str(e)
-        }), 400
+        }), 500
